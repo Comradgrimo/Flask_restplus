@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from flask import Flask
+from flask import Flask, jsonify
 from flask_restplus import Api, Resource, fields
 from config import db, ma
 from flask import make_response, abort
@@ -25,17 +25,24 @@ PEOPLE = [
 class People(Resource):
     def get(self):
         return PEOPLE, 201
-
     @api.expect(a_people)
     def post(self):
         new_people = api.payload
         new_people['id'] = len(PEOPLE)+1
         PEOPLE.append(new_people)
-        return {'result': 'fio added'}, 201
+        return {'result': 'people added'}, 201
 
-    @api.expect(a_people)
-    def put(self):
-        pass
+@api.route('/people/<id>')
+class People1(Resource):
+    def put(self, id):
+        new_people = api.payload
+        res = [x for x in PEOPLE if x['id'] == id]
+        res[0].update(new_people)
+        return {'result': 'people update'}, 201
+
+    def get(self, id):
+        res = [x for x in PEOPLE if x['id'] == id]
+        return {'result': res}, 201
 
 if __name__ == '__main__':
-    app.run(host='192.168.15.164')
+    app.run(debug=True)
