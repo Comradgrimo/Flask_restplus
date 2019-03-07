@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 eng = create_engine("sqlite:///people.db")
 conn = eng.connect()
-result = conn.execute('''select name from person ''')
+result = conn.execute('select * from person')
 print(result.first())
 
 
