@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime
-from flask import Flask, jsonify
-from flask_restplus import Api, Resource, fields
+from flask import Flask, jsonify, request
+from flask_restplus import Api, Resource, fields, reqparse
 from sqlalchemy import create_engine
 import os
 import connexion
+from sqlalchemy import or_, and_
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 # from config import db, ma
@@ -19,7 +20,7 @@ from flask_marshmallow import Marshmallow
 
 app = Flask(__name__)
 api = Api(app, title='Сотрудники')
-api = api.namespace('todos', description='TODO operations')
+
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///people.db'
@@ -33,7 +34,7 @@ class Person(db.Model):
     birthday = db.Column(db.String(32))
     office = db.Column(db.String(32))
     timestamp = db.Column(
-        db.DateTime,  default=datetime.utcnow, onupdate=datetime.utcnow
+        db.DateTime,  default=datetime.utcnow(), onupdate=datetime.utcnow()
     )
 
     def __init__(self, fio, birthday, office):
@@ -112,16 +113,21 @@ class People1(Resource):
         else:
             return {'Ненайден сотрудник с id №': id}, 404
 
-@api.route('/people/office/<office>')
-class People2(Resource):
-    def get(self, office):
-        '''Выбрать человека по его Должности'''
-        person = Person.query.filter(Person.office == office).all()
-        #if person is not None:
-        result = users_schema.dump(person, office)
-        return jsonify(result.data)
-        #else:
-           # return {'Ненайден сотрудник с длжностью %s:': office }, 404
+
+@api.route('/people/filter')
+@api.doc(params={'Person_id': 'An Person_id','office': 'An Office' })
+class Item(Resource):
+    def get(self):
+        args = reqparse.RequestParser()
+        Rq = args.add_argument('Person_id').parse_args()['Person_id']
+        Rq1 = args.add_argument('office').parse_args()['office']
+        args = args.parse_args()
+        #Rq = args['arg']
+        #Rq1 = args['arg1']
+        person = Person.query.filter(and_(Person.person_id == Rq,Person.birthday == Rq1))
+        result = users_schema.dump(person)
+        return result
+#api.add_resource(Item, '/people/office/Item')
 
 if __name__ == '__main__':
     app.run(debug=True)

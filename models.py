@@ -9,7 +9,7 @@ class Person(db.Model):
     birthday = db.Column(db.String(32))
     office = db.Column(db.String(32))
     timestamp = db.Column(
-        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+        db.DateTime, default=datetime.strftime(datetime.now(), "%Y.%m.%d")
     )
 
 
