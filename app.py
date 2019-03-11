@@ -10,7 +10,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 # from config import db, ma
 # from flask import make_response, abort
-# from models import Person, PersonSchema
+from models import Person
 
 # conn = eng.connect()
 # result = conn.execute('select * from person')
@@ -27,20 +27,20 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///people.db'
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
 
-class Person(db.Model):
-    __tablename__ = 'person'
-    person_id = db.Column(db.Integer, primary_key=True)
-    fio = db.Column(db.String(32))
-    birthday = db.Column(db.String(32))
-    office = db.Column(db.String(32))
-    timestamp = db.Column(
-        db.DateTime,  default=datetime.utcnow(), onupdate=datetime.utcnow()
-    )
+# class Person(db.Model):
+#     __tablename__ = 'person'
+#     person_id = db.Column(db.Integer, primary_key=True)
+#     fio = db.Column(db.String(32))
+#     birthday = db.Column(db.String(32))
+#     office = db.Column(db.String(32))
+#     timestamp = db.Column(
+#         db.DateTime,  default=datetime.utcnow(), onupdate=datetime.utcnow()
+#     )
 
-    def __init__(self, fio, birthday, office):
-        self.fio = fio
-        self.birthday = birthday
-        self.office = office
+def __init__(self, fio, birthday, office):
+    self.fio = fio
+    self.birthday = birthday
+    self.office = office
 
 
 class UserSchema(ma.Schema):
@@ -54,7 +54,7 @@ users_schema = UserSchema(many=True)
 
 
 a_people = api.model('People', {'fio': fields.String('The language.'),
-                                'birthday': fields.String('The birthday.'),
+                                'birthday': fields.DateTime('The birthday.'),
                                 'office': fields.String('The office.')
                                   })
 #
@@ -76,7 +76,7 @@ class People(Resource):
     def put(self):
         '''Добавить человека'''
         new_people = api.payload
-        db.session.add(Person(fio = new_people['fio'], birthday =new_people['birthday'], office =new_people['office']))
+        db.session.add(Person(fio = new_people['fio'], birthday =datetime.strptime(new_people['birthday'], '%d-%m-%Y'), office =new_people['office']))
         db.session.commit()
         return new_people
 #

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 from config import db, ma
 
 
@@ -6,12 +6,12 @@ class Person(db.Model):
     __tablename__ = 'person'
     person_id = db.Column(db.Integer, primary_key=True)
     fio = db.Column(db.String(32))
-    birthday = db.Column(db.String(32))
+    birthday = db.Column(db.DateTime)
     office = db.Column(db.String(32))
     timestamp = db.Column(
-        db.DateTime, default=datetime.strftime(datetime.now(), "%Y.%m.%d")
+        db.DateTime, default=date.today()
     )
-
+#'%Y-%m-%d'
 
 class PersonSchema(ma.ModelSchema):
     class Meta:

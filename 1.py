@@ -1,3 +1,8 @@
+
+from datetime import datetime, date
+print(datetime.strftime(datetime.now(), "%Y-%m-%d"))
+
+
 # # from sqlalchemy import create_engine
 # # eng = create_engine("sqlite:///people.db")
 # # conn = eng.connect()
