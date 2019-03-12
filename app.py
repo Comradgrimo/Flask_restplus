@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import Flask, jsonify, request
 from flask_restplus import Api, Resource, fields, reqparse
 from sqlalchemy import create_engine
@@ -37,33 +37,27 @@ ma = Marshmallow(app)
 #         db.DateTime,  default=datetime.utcnow(), onupdate=datetime.utcnow()
 #     )
 
-def __init__(self, fio, birthday, office):
+def __init__(self, fio, birthday, office, employment):
     self.fio = fio
     self.birthday = birthday
     self.office = office
-
+    self.employment = employment
 
 class UserSchema(ma.Schema):
     class Meta:
         # Fields to expose
-        fields = ('person_id', 'fio', 'birthday', 'office', 'timestamp' )
+        fields = ('person_id', 'fio', 'birthday', 'office', 'employment' )
 
 
 user_schema = UserSchema()
 users_schema = UserSchema(many=True)
 
 
-a_people = api.model('People', {'fio': fields.String('The language.'),
-                                'birthday': fields.DateTime('The birthday.'),
-                                'office': fields.String('The office.')
+a_people = api.model('People', {'fio': fields.String('Имя фамилия отчество.', example="Иванов И.И"),
+                                'birthday': fields.DateTime(dt_format='iso8601', required=False, description='birthday', example="DD-MM-YYYY"),
+                                'office': fields.String('Должность.', example="Инженер"),
+                                'employment': fields.DateTime('Дата приема на работу.',description='birthday', example="DD-MM-YYYY")
                                   })
-#
-# PEOPLE = [
-#     {"id": "1", "fio": "Иванов И.И", "birthday": "11.01.11", "office": "Инженер"},
-#     {"id": "2", "fio": "Петров П.П", "birthday": "12.02.12", "office": "Уборщик"},
-#     {"id": "3", "fio": "Сидоров С.С", "birthday": "13.03.13", "office": "Главбух"},
-#  ]
-# #PEOPLE = {'language' : 'aaaaa', 'id' : '1'}
 
 @api.route('/people')
 class People(Resource):
@@ -76,7 +70,7 @@ class People(Resource):
     def put(self):
         '''Добавить человека'''
         new_people = api.payload
-        db.session.add(Person(fio = new_people['fio'], birthday =datetime.strptime(new_people['birthday'], '%d-%m-%Y'), office =new_people['office']))
+        db.session.add(Person(fio = new_people['fio'], birthday =datetime.strptime(new_people['birthday'], '%d-%m-%Y'), office =new_people['office'], employment=new_people['employment'] ))
         db.session.commit()
         return new_people
 #
@@ -108,6 +102,7 @@ class People1(Resource):
             person.fio = new_people['fio']
             person.birthday = new_people['birthday']
             person.office = new_people['office']
+            person.employment = new_people['employment']
             db.session.commit()
             return {'update №': person.fio}, 201
         else:
@@ -115,19 +110,48 @@ class People1(Resource):
 
 
 @api.route('/people/filter')
-@api.doc(params={'Person_id': 'An Person_id','office': 'An Office' })
+@api.doc(params={'olderThan': 'Старше чем:','yongerThan': 'Младше чем:' })
 class Item(Resource):
     def get(self):
         args = reqparse.RequestParser()
-        Rq = args.add_argument('Person_id').parse_args()['Person_id']
-        Rq1 = args.add_argument('office').parse_args()['office']
+        olderThan = args.add_argument('olderThan').parse_args()['olderThan']
+        yongerThan = args.add_argument('yongerThan').parse_args()['yongerThan']
         args = args.parse_args()
         #Rq = args['arg']
         #Rq1 = args['arg1']
-        person = Person.query.filter(and_(Person.person_id == Rq,Person.birthday == Rq1))
-        result = users_schema.dump(person)
-        return result
+        if olderThan is not None and yongerThan is not None:
+            person = Person.query.filter(and_(Person.birthday < (datetime.now()-timedelta(days=int(olderThan) * 365)),
+                                     Person.birthday > (datetime.now()-timedelta(days=int(yongerThan) * 365))
+                                     ))
+            result = users_schema.dump(person).data
+            return result
+
+        if olderThan == None:
+                person = Person.query.filter(Person.birthday > (datetime.now() - timedelta(days=int(yongerThan) * 365)))
+                result = users_schema.dump(person).data
+                return result
+
+        if yongerThan == None:
+                person = Person.query.filter(Person.birthday < (datetime.now() - timedelta(days=int(olderThan) * 365)))
+                result = users_schema.dump(person).data
+                return result
+
+        # if Rq1 == '>':
+        #     person = Person.query.filter(Person.birthday > (datetime.now()-timedelta(days=int(Rq) * 365))).all()
+        #     result = users_schema.dump(person).data
+        #     return result
+        # if Rq1 == '<':
+        #     person = Person.query.filter(Person.birthday < (datetime.now()-timedelta(days=int(Rq) * 365))).all()
+        #     result = users_schema.dump(person).data
+        #     return result
+        #for i in range(4): mn = result[i].get('birthday')
+        #return person
+        #if round((datetime.now() - Person.birthday).days / 365) < Rq:
+           # person = Person.query.filter(and_(Person.person_id == Rq, Person.birthday < date.today() ))
+            #result = users_schema.dump(person)
+             #return {'КАЕФ': id}
 #api.add_resource(Item, '/people/office/Item')
+#str(datetime.timedelta(seconds=500000))
 
 if __name__ == '__main__':
     app.run(debug=True)

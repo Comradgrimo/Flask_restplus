@@ -8,9 +8,7 @@ class Person(db.Model):
     fio = db.Column(db.String(32))
     birthday = db.Column(db.DateTime)
     office = db.Column(db.String(32))
-    timestamp = db.Column(
-        db.DateTime, default=date.today()
-    )
+    employment = db.Column(db.DateTime)
 #'%Y-%m-%d'
 
 class PersonSchema(ma.ModelSchema):
