@@ -110,31 +110,56 @@ class People1(Resource):
 
 
 @api.route('/people/filter')
-@api.doc(params={'olderThan': 'Старше чем:','yongerThan': 'Младше чем:' })
+@api.doc(params={'olderThan': 'Старше чем:',
+                'yongerThan': 'Младше чем:',
+                'exp1': 'Опыт работы больше чем:',
+                'exp2': 'Опыт работы меньше чем:',
+                'office': 'По должности:'})
+
 class Item(Resource):
     def get(self):
+        '''Фильтр по параметрам'''
         args = reqparse.RequestParser()
         olderThan = args.add_argument('olderThan').parse_args()['olderThan']
         yongerThan = args.add_argument('yongerThan').parse_args()['yongerThan']
-        args = args.parse_args()
-        #Rq = args['arg']
-        #Rq1 = args['arg1']
-        if olderThan is not None and yongerThan is not None:
-            person = Person.query.filter(and_(Person.birthday < (datetime.now()-timedelta(days=int(olderThan) * 365)),
-                                     Person.birthday > (datetime.now()-timedelta(days=int(yongerThan) * 365))
-                                     ))
-            result = users_schema.dump(person).data
-            return result
+        exp1 = args.add_argument('exp1').parse_args()['exp1']
+        exp2 = args.add_argument('exp2').parse_args()['exp2']
+        office = args.add_argument('office').parse_args()['office']
+        query = Person.query
+        if olderThan is not None:
+            query = query.filter(and_(Person.birthday < (datetime.now() - timedelta(days=int(olderThan) * 365))))
+        if yongerThan is not None:
+            query = query.filter(and_(Person.birthday > (datetime.now() - timedelta(days=int(yongerThan) * 365))))
+        if exp1 is not None:
+            query = query.filter(and_(Person.employment < (datetime.now() - timedelta(days=int(exp1) * 365))))
+        if exp2 is not None:
+            query = query.filter(and_(Person.employment > (datetime.now() - timedelta(days=int(exp2) * 365))))
+        if office is not None:
+            query = query.filter(and_(Person.office == office))
 
-        if olderThan == None:
-                person = Person.query.filter(Person.birthday > (datetime.now() - timedelta(days=int(yongerThan) * 365)))
-                result = users_schema.dump(person).data
-                return result
 
-        if yongerThan == None:
-                person = Person.query.filter(Person.birthday < (datetime.now() - timedelta(days=int(olderThan) * 365)))
-                result = users_schema.dump(person).data
-                return result
+        result = users_schema.dump(query).data
+        return result
+        # if exp1 is not None:
+        #         person = Person.query.filter(Person.employment < (datetime.now() - timedelta(days=int(exp1) * 365)))
+        #
+        # if exp2 is not None:
+        #         person = Person.query.filter(Person.employment > (datetime.now() - timedelta(days=int(exp2) * 365)))
+        #
+        # if office is not None:
+        #         person = Person.query.filter(Person.office == office)
+        # result = users_schema.dump(person).data
+        # return result
+        #
+        # person = Person.query.filter(and_(Person.birthday < (datetime.now()-timedelta(days=int(olderThan) * 365)),
+        #                              Person.birthday > (datetime.now()-timedelta(days=int(yongerThan) * 365)),
+        #                              Person.employment < (datetime.now() - timedelta(days=int(exp1) * 365)),
+        #                              Person.employment < (datetime.now() - timedelta(days=int(exp2) * 365)),
+        #                              Person.query.filter(Person.office == office)
+        #                              ))
+
+
+
 
         # if Rq1 == '>':
         #     person = Person.query.filter(Person.birthday > (datetime.now()-timedelta(days=int(Rq) * 365))).all()
