@@ -1,0 +1,14 @@
+---
+
+test_name: Make sure server doubles number properly
+
+stages:
+  - name: Make sure number is returned correctly
+    request:
+      url: http://192.168.15.164:5010/people
+      method: GET
+      headers:
+        content-type: application/json
+    response:
+      status_code: 200
+
