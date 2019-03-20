@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime, timedelta
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, abort
 from flask_restplus import Api, Resource, fields, reqparse
 from sqlalchemy import create_engine
 import os
@@ -10,7 +10,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 # from config import db, ma
 # from flask import make_response, abort
-from models import Person
+#from models import Person
 
 # conn = eng.connect()
 # result = conn.execute('select * from person')
@@ -27,15 +27,13 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///people.db'
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
 
-# class Person(db.Model):
-#     __tablename__ = 'person'
-#     person_id = db.Column(db.Integer, primary_key=True)
-#     fio = db.Column(db.String(32))
-#     birthday = db.Column(db.String(32))
-#     office = db.Column(db.String(32))
-#     timestamp = db.Column(
-#         db.DateTime,  default=datetime.utcnow(), onupdate=datetime.utcnow()
-#     )
+class Person(db.Model):
+    __tablename__ = 'person'
+    person_id = db.Column(db.Integer, primary_key=True)
+    fio = db.Column(db.String(32))
+    birthday = db.Column(db.DateTime)
+    office = db.Column(db.String(32))
+    employment = db.Column(db.DateTime)
 
 def __init__(self, fio, birthday, office, employment):
     self.fio = fio
@@ -54,9 +52,9 @@ users_schema = UserSchema(many=True)
 
 
 a_people = api.model('People', {'fio': fields.String('Имя фамилия отчество.', example="Иванов И.И"),
-                                'birthday': fields.DateTime(dt_format='iso8601', required=False, description='birthday', example="DD-MM-YYYY"),
+                                'birthday': fields.DateTime(dt_format='iso8601', required=False, description='birthday', example="1991-07-21"),
                                 'office': fields.String('Должность.', example="Инженер"),
-                                'employment': fields.DateTime('Дата приема на работу.',description='birthday', example="DD-MM-YYYY")
+                                'employment': fields.DateTime(dt_format='iso8601', required=False, description='employment', example="1991-07-21")
                                   })
 
 @api.route('/people')
@@ -66,22 +64,32 @@ class People(Resource):
         all_users = Person.query.order_by(Person.person_id).all()
         result = users_schema.dump(all_users)
         return result
+
     @api.expect(a_people)
     def put(self):
         '''Добавить человека'''
-        new_people = api.payload
-        db.session.add(Person(fio = new_people['fio'], birthday =datetime.strptime(new_people['birthday'], '%d-%m-%Y'), office =new_people['office'], employment=new_people['employment'] ))
-        db.session.commit()
-        return new_people
-#
+        try:
+            new_people = api.payload
+            db.session.add(Person(fio=new_people['fio'],
+                              birthday=datetime.strptime(new_people['birthday'], '%Y-%m-%d'),
+                              office=new_people['office'],
+                              employment=datetime.strptime(new_people['employment'], '%Y-%m-%d')
+                              )
+                            )
+            db.session.commit()
+            return new_people, 201
+        except ValueError:
+            return 'Введенные данные неверные', 400
+        # except TypeError:
+        #     return 'Введенный тип данных неверный', 400
 @api.route('/people/<id>')
 class People1(Resource):
-    def get(self, id):
+    def get(self,id):
         '''Выбрать человека по его ID'''
         person = Person.query.filter(Person.person_id == id).one_or_none()
         if person is not None:
-            result = users_schema.dump(person, id)
-            return jsonify(result.data)
+            result = user_schema.dump(person)
+            return result.data
         else:
             return {'Ненайден сотрудник с id №': id}, 404
     def delete(self, id):
@@ -90,24 +98,26 @@ class People1(Resource):
         if person is not None:
             db.session.delete(person)
             db.session.commit()
-            return {'deleted person id №': id}, 201
+            return {'Удален сотрудник №': id}
         else:
             return {'Ненайден сотрудник с id №': id}, 404
     @api.expect(a_people)
     def post(self,id):
         '''Изменить запись'''
         new_people = api.payload
-        person = Person.query.filter(Person.person_id == id).one_or_none()
-        if person is not None:
-            person.fio = new_people['fio']
-            person.birthday = new_people['birthday']
-            person.office = new_people['office']
-            person.employment = new_people['employment']
-            db.session.commit()
-            return {'update №': person.fio}, 201
-        else:
-            return {'Ненайден сотрудник с id №': id}, 404
-
+        try:
+            person = Person.query.filter(Person.person_id == id).one_or_none()
+            if person is not None:
+                person.fio = new_people['fio']
+                person.birthday = datetime.strptime(new_people['birthday'], '%d-%m-%Y')
+                person.office = new_people['office']
+                person.employment = datetime.strptime(new_people['employment'], '%d-%m-%Y')
+                db.session.commit()
+                return {'Изменен сотрудник №': id}
+            else:
+                return {'Ненайден сотрудник с id №': id}, 404
+        except ValueError:
+            return 'Введенные данные неверные', 400
 
 @api.route('/people/filter')
 @api.doc(params={'olderThan': 'Старше чем:',
@@ -125,65 +135,24 @@ class Item(Resource):
         exp1 = args.add_argument('exp1').parse_args()['exp1']
         exp2 = args.add_argument('exp2').parse_args()['exp2']
         office = args.add_argument('office').parse_args()['office']
-        query = Person.query
-        if olderThan is not None:
-            query = query.filter(and_(Person.birthday < (datetime.now() - timedelta(days=int(olderThan) * 365))))
-        if yongerThan is not None:
-            query = query.filter(and_(Person.birthday > (datetime.now() - timedelta(days=int(yongerThan) * 365))))
-        if exp1 is not None:
-            query = query.filter(and_(Person.employment < (datetime.now() - timedelta(days=int(exp1) * 365))))
-        if exp2 is not None:
-            query = query.filter(and_(Person.employment > (datetime.now() - timedelta(days=int(exp2) * 365))))
-        if office is not None:
-            query = query.filter(and_(Person.office == office))
-
-
+        try:
+            query = Person.query
+            if olderThan is not None:
+                query = query.filter(and_(Person.birthday < (datetime.now() - timedelta(days=int(olderThan) * 365))))
+            if yongerThan is not None:
+                query = query.filter(and_(Person.birthday > (datetime.now() - timedelta(days=int(yongerThan) * 365))))
+            if exp1 is not None:
+                query = query.filter(and_(Person.employment < (datetime.now() - timedelta(days=int(exp1) * 365))))
+            if exp2 is not None:
+                query = query.filter(and_(Person.employment > (datetime.now() - timedelta(days=int(exp2) * 365))))
+            if office is not None:
+                query = query.filter(and_(Person.office == office))
+        except OverflowError:
+            return 'Ввдедите корректные значения', 400
         result = users_schema.dump(query).data
+        if result == []:
+            return 'Ничего не найденно', 404
         return result
-        # if exp1 is not None:
-        #         person = Person.query.filter(Person.employment < (datetime.now() - timedelta(days=int(exp1) * 365)))
-        #
-        # if exp2 is not None:
-        #         person = Person.query.filter(Person.employment > (datetime.now() - timedelta(days=int(exp2) * 365)))
-        #
-        # if office is not None:
-        #         person = Person.query.filter(Person.office == office)
-        # result = users_schema.dump(person).data
-        # return result
-        #
-        # person = Person.query.filter(and_(Person.birthday < (datetime.now()-timedelta(days=int(olderThan) * 365)),
-        #                              Person.birthday > (datetime.now()-timedelta(days=int(yongerThan) * 365)),
-        #                              Person.employment < (datetime.now() - timedelta(days=int(exp1) * 365)),
-        #                              Person.employment < (datetime.now() - timedelta(days=int(exp2) * 365)),
-        #                              Person.query.filter(Person.office == office)
-        #                              ))
-
-
-
-
-        # if Rq1 == '>':
-        #     person = Person.query.filter(Person.birthday > (datetime.now()-timedelta(days=int(Rq) * 365))).all()
-        #     result = users_schema.dump(person).data
-        #     return result
-        # if Rq1 == '<':
-        #     person = Person.query.filter(Person.birthday < (datetime.now()-timedelta(days=int(Rq) * 365))).all()
-        #     result = users_schema.dump(person).data
-        #     return result
-        #for i in range(4): mn = result[i].get('birthday')
-        #return person
-        #if round((datetime.now() - Person.birthday).days / 365) < Rq:
-           # person = Person.query.filter(and_(Person.person_id == Rq, Person.birthday < date.today() ))
-            #result = users_schema.dump(person)
-             #return {'КАЕФ': id}
-#api.add_resource(Item, '/people/office/Item')
-#str(datetime.timedelta(seconds=500000))
 
 if __name__ == '__main__':
-    app.run(debug=True)
-
-
-#
-# def filter():
-#     olderThan = request.args.get('olderThan', None)
-#     yongerThan = request.args.get('yongerTnah', None)
-
+    app.run()

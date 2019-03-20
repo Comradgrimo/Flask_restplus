@@ -1,119 +1,30 @@
-
 from datetime import datetime, date
-print(datetime.strftime(datetime.now(), "%Y-%m-%d"))
+import requests
+from faker import Faker
+fake = Faker('ru_Ru')
+# fio = fake.name()
+# birthday = fake.date_of_birth(tzinfo=None, minimum_age=20, maximum_age=65)
+# employment = fake.date_this_century(before_today=True, after_today=False)
+# office = fake.job()
+# print(fio,birthday,office, employment)
 
 
-# # from sqlalchemy import create_engine
-# # eng = create_engine("sqlite:///people.db")
-# # conn = eng.connect()
-# # result = conn.execute('select * from person')
-# # print(result.first())
-# #
-# #
-# #
-# #
-# #
-# #
-# # PEOPLE = [
-# #     {"id": "1", "fio": "Иванов И.И", "birthday": "11.01.11", "office": "Инженер"},
-# #     {"id": "2", "fio": "Петров П.П", "birthday": "12.02.12", "office": "Уборщик"},
-# #     {"id": "3", "fio": "Сидоров С.С", "birthday": "13.03.13", "office": "Главбух"},
-# #  ]
-# #
-# # lang = [x for x in PEOPLE if x['id'] == '1']
-# # print(lang)
-# from flask import Flask
-# from flask_restplus import Api, Resource, fields
-# from werkzeug.contrib.fixers import ProxyFix
-#
-# app = Flask(__name__)
-# app.wsgi_app = ProxyFix(app.wsgi_app)
-# api = Api(app, version='1.0', title='TodoMVC API',
-#     description='A simple TodoMVC API',
-# )
-#
-# ns = api.namespace('todos', description='TODO operations')
-#
-# todo = api.model('Todo', {
-#     'id': fields.Integer(readOnly=True, description='The task unique identifier'),
-#     'task': fields.String(required=True, description='The task details')
-# })
-#
-#
-# class TodoDAO(object):
-#     def __init__(self):
-#         self.counter = 0
-#         self.todos = []
-#
-#     def get(self, id):
-#         for todo in self.todos:
-#             if todo['id'] == id:
-#                 return todo
-#         api.abort(404, "Todo {} doesn't exist".format(id))
-#
-#     def create(self, data):
-#         todo = data
-#         todo['id'] = self.counter = self.counter + 1
-#         self.todos.append(todo)
-#         return todo
-#
-#     def update(self, id, data):
-#         todo = self.get(id)
-#         todo.update(data)
-#         return todo
-#
-#     def delete(self, id):
-#         todo = self.get(id)
-#         self.todos.remove(todo)
-#
-#
-# DAO = TodoDAO()
-# DAO.create({'task': 'Build an API'})
-# DAO.create({'task': '?????'})
-# DAO.create({'task': 'profit!'})
-#
-#
-# @ns.route('/')
-# class TodoList(Resource):
-#     '''Shows a list of all todos, and lets you POST to add new tasks'''
-#     @ns.doc('list_todos')
-#     @ns.marshal_list_with(todo)
-#     def get(self):
-#         '''List all tasks'''
-#         return DAO.todos
-#
-#     @ns.doc('create_todo')
-#     @ns.expect(todo)
-#     @ns.marshal_with(todo, code=201)
-#     def post(self):
-#         '''Create a new task'''
-#         return DAO.create(api.payload), 201
-#
-#
-# @ns.route('/<int:id>')
-# @ns.response(404, 'Todo not found')
-# @ns.param('id', 'The task identifier')
-# class Todo(Resource):
-#     '''Show a single todo item and lets you delete them'''
-#     @ns.doc('get_todo')
-#     @ns.marshal_with(todo)
-#     def get(self, id):
-#         '''Fetch a given resource'''
-#         return DAO.get(id)
-#
-#     @ns.doc('delete_todo')
-#     @ns.response(204, 'Todo deleted')
-#     def delete(self, id):
-#         '''Delete a task given its identifier'''
-#         DAO.delete(id)
-#         return '', 204
-#
-#     @ns.expect(todo)
-#     @ns.marshal_with(todo)
-#     def put(self, id):
-#         '''Update a task given its identifier'''
-#         return DAO.update(id, api.payload)
-#
-#
-# if __name__ == '__main__':
-#     app.run(debug=True)
+
+
+url = "http://192.168.15.164:5010/people"
+
+# a =[{"fio": "Иванов И.И", "birthday": datetime.strptime('11-01-1965', '%d-%m-%Y').date(), "office": "Инженер", "employment": datetime.strptime('10-10-2001', '%d-%m-%Y').date()},
+# {"fio": "Петров П.П", "birthday": datetime.strptime('06-10-1985', '%d-%m-%Y').date(), "office": "Уборщик",
+#  "employment": datetime.strptime('12-07-2003', '%d-%m-%Y').date()},
+# {"fio": "Сидоров С.С", "birthday": datetime.strptime('21-07-1991', '%d-%m-%Y').date(), "office": "Главбух",
+#  "employment": datetime.strptime('21-09-2005', '%d-%m-%Y').date()}]
+for i in range(5):
+    fio = fake.name()
+    birthday = fake.date_of_birth(tzinfo=None, minimum_age=20, maximum_age=65)
+    employment = fake.date_this_century(before_today=True, after_today=False)
+    office = fake.job()
+    print({"fio": fio, "birthday": birthday, "office": office, "employment": employment})
+    r = requests.put(url, json= {"fio": fio, "birthday": str(birthday), "office": office, "employment": str(employment)})
+
+# print(array)
+# print(a)

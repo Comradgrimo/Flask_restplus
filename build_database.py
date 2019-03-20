@@ -3,13 +3,16 @@ from datetime import datetime, date
 import os
 from config import db
 from models import Person
-
+from faker import Faker
+fake = Faker('ru_Ru')
 # Data to initialize database with
-PEOPLE = [
-    {"fio": "Иванов И.И", "birthday": datetime.strptime('11-01-1965', '%d-%m-%Y'), "office": "Инженер",  "employment": datetime.strptime('10-10-2001', '%d-%m-%Y')},
-    {"fio": "Петров П.П", "birthday": datetime.strptime('06-10-1985', '%d-%m-%Y'), "office": "Уборщик", "employment": datetime.strptime('12-07-2003', '%d-%m-%Y')},
-    {"fio": "Сидоров С.С", "birthday": datetime.strptime('21-07-1991', '%d-%m-%Y'), "office": "Главбух", "employment": datetime.strptime('21-09-2005', '%d-%m-%Y')},
-]
+PEOPLE=[]
+for i in range(30):
+    fio = fake.name()
+    birthday = fake.date_of_birth(tzinfo=None, minimum_age=20, maximum_age=65)
+    employment = fake.date_this_century(before_today=True, after_today=False)
+    office = fake.job()
+    PEOPLE.append({'fio': fio,'birthday': birthday,'office': office,'employment': employment, })
 
 # Delete database file if it exists currently
 if os.path.exists("people.db"):
