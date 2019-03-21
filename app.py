@@ -109,9 +109,9 @@ class People1(Resource):
             person = Person.query.filter(Person.person_id == id).one_or_none()
             if person is not None:
                 person.fio = new_people['fio']
-                person.birthday = datetime.strptime(new_people['birthday'], '%d-%m-%Y')
+                person.birthday = datetime.strptime(new_people['birthday'], '%Y-%m-%d')
                 person.office = new_people['office']
-                person.employment = datetime.strptime(new_people['employment'], '%d-%m-%Y')
+                person.employment = datetime.strptime(new_people['employment'], '%Y-%m-%d')
                 db.session.commit()
                 return {'Изменен сотрудник №': id}
             else:
