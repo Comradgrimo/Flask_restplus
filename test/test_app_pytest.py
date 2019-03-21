@@ -75,7 +75,7 @@ def test_filter4():
     r = requests.get(url + '/filter', params=('exp2=10'))
     print(r.json())
     assert r.status_code == 200
-def test_filter4():
+def test_filter5():
     r = requests.get(url + '/filter', params=('office=Программист'))
     print(r.json())
     assert r.status_code == 200
