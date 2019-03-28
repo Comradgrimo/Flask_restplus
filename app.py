@@ -1,22 +1,12 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime, timedelta
-from flask import Flask, jsonify, request, abort
+from flask import Flask
 from flask_restplus import Api, Resource, fields, reqparse
-from sqlalchemy import create_engine
 import os
-import connexion
-from sqlalchemy import or_, and_
+from sqlalchemy import and_
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
-# from config import db, ma
-# from flask import make_response, abort
-#from models import Person
-
-# conn = eng.connect()
-# result = conn.execute('select * from person')
-# print(result.first())
-
-
+from create_base.models import Person
 
 app = Flask(__name__)
 api = Api(app, title='Сотрудники')
@@ -26,14 +16,6 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///people.db'
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
-
-class Person(db.Model):
-    __tablename__ = 'person'
-    person_id = db.Column(db.Integer, primary_key=True)
-    fio = db.Column(db.String(32))
-    birthday = db.Column(db.DateTime)
-    office = db.Column(db.String(32))
-    employment = db.Column(db.DateTime)
 
 def __init__(self, fio, birthday, office, employment):
     self.fio = fio
@@ -80,8 +62,6 @@ class People(Resource):
             return new_people, 201
         except ValueError:
             return 'Введенные данные неверные', 400
-        # except TypeError:
-        #     return 'Введенный тип данных неверный', 400
 @api.route('/people/<id>')
 class People1(Resource):
     def get(self,id):
